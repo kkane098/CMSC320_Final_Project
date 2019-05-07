@@ -8,3 +8,9 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r load_csv}
+library(tidyverse)
+dat <- read_csv("listings_sf_all.csv")
+dat
+```
