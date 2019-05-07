@@ -14,3 +14,11 @@ library(tidyverse)
 dat <- read_csv("listings_sf_all.csv")
 dat
 ```
+
+
+
+```{r}
+dat %>%
+  mutate(nprice = as.double(substr(str_replace(price, ',', ''), 2, length(price))))
+
+```
