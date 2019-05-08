@@ -313,43 +313,32 @@ head(fixed_amenities %&gt;% select(has_internet, has_tv, has_kitchen, has_washer
 ## 5 TRUE         TRUE   TRUE        FALSE      FALSE     TRUE        FALSE 
 ## 6 TRUE         TRUE   TRUE        TRUE       TRUE      TRUE        FALSE 
 ## # ... with 1 more variable: pets_allowed &lt;lgl&gt;</code></pre>
-<pre class="r"><code>selected_dat %&gt;% 
+<p>Now let’s take a look at the price columns. Currently, prices are stored as strings and cannot be converted to doubles because of the presence of ‘$’ and ‘,’ characters. However, these can be removed by calling str_replace() with the empty string. After that, we can safely convert the price columns to doubles using as.double().</p>
+<pre class="r"><code>fixed_prices &lt;- fixed_amenities %&gt;% 
   mutate(price            = as.double(str_replace(str_replace(price,            ',', ''), '\\$', ''))) %&gt;%
   mutate(weekly_price     = as.double(str_replace(str_replace(weekly_price,     ',', ''), '\\$', ''))) %&gt;%
   mutate(monthly_price    = as.double(str_replace(str_replace(monthly_price,    ',', ''), '\\$', ''))) %&gt;%
   mutate(security_deposit = as.double(str_replace(str_replace(security_deposit, ',', ''), '\\$', ''))) %&gt;%
   mutate(cleaning_fee     = as.double(str_replace(str_replace(cleaning_fee,     ',', ''), '\\$', ''))) %&gt;%
-  mutate(extra_people     = as.double(str_replace(str_replace(extra_people,     ',', ''), '\\$', ''))) %&gt;%
-  
+  mutate(extra_people     = as.double(str_replace(str_replace(extra_people,     ',', ''), '\\$', '')))</code></pre>
+<p>However, there is still a problem with the prices.</p>
+<pre class="r"><code>head(fixed_prices %&gt;% select(price, weekly_price, monthly_price, security_deposit, cleaning_fee, extra_people))</code></pre>
+<pre><code>## # A tibble: 6 x 6
+##   price weekly_price monthly_price security_deposit cleaning_fee
+##   &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;        &lt;dbl&gt;
+## 1   170         1120          4200              100          100
+## 2   235         1600          5500               NA          100
+## 3    65          485          1685              200           50
+## 4    65          490          1685              200           50
+## 5   785           NA            NA                0          225
+## 6   255           NA            NA                0          125
+## # ... with 1 more variable: extra_people &lt;dbl&gt;</code></pre>
+<p>As you can see, several prices are encoded as ‘NA’ in the table. This is referred to as <strong>missing data</strong> and there are several ways to deal with it. General options are to replace the missing data with the mean value of the column or the predicted value from some model. However, in this case we can use our knowledge of the data to replace the missing values. The weekly_price and monthly_price columns represent special rates provided by the owner of the listing for visitors with longer stays. If they are ‘NA’, that means that there is no discount and those missing values can be replaced by the nightly price (the price column) multiplied by 7 or 30 respectively. We can also safely assume that if the security_deposit or cleaning_fee columns are ‘NA’ that there is no required security deposit or cleaning fee, so those missing values can be replaced with 0.</p>
+<pre class="r"><code>fixed_prices &lt;- fixed_prices %&gt;%
   mutate(weekly_price     = ifelse(is.na(weekly_price),     price*7, weekly_price)) %&gt;%
   mutate(monthly_price    = ifelse(is.na(monthly_price),    price*30, monthly_price)) %&gt;%
   mutate(security_deposit = ifelse(is.na(security_deposit), 0, security_deposit)) %&gt;%
   mutate(cleaning_fee     = ifelse(is.na(cleaning_fee),     0, cleaning_fee))</code></pre>
-<pre><code>## # A tibble: 7,151 x 37
-##    host_id host_since host_response_t~ host_response_r~ host_is_superho~
-##      &lt;dbl&gt; &lt;date&gt;     &lt;chr&gt;            &lt;chr&gt;            &lt;lgl&gt;           
-##  1    1169 2008-07-31 within an hour   100%             TRUE            
-##  2    8904 2009-03-02 within a day     80%              FALSE           
-##  3   21994 2009-06-17 within a few ho~ 100%             FALSE           
-##  4   21994 2009-06-17 within a few ho~ 100%             FALSE           
-##  5   24215 2009-07-02 within an hour   100%             FALSE           
-##  6   25601 2009-07-14 within a day     70%              FALSE           
-##  7    7149 2009-01-27 within an hour   100%             TRUE            
-##  8   29674 2009-08-04 within an hour   100%             FALSE           
-##  9   35199 2009-08-31 within an hour   100%             TRUE            
-## 10   38836 2009-09-15 within a few ho~ 99%              FALSE           
-## # ... with 7,141 more rows, and 32 more variables:
-## #   host_listings_count &lt;dbl&gt;, host_identity_verified &lt;lgl&gt;,
-## #   neighbourhood_cleansed &lt;chr&gt;, zipcode &lt;dbl&gt;, latitude &lt;dbl&gt;,
-## #   longitude &lt;dbl&gt;, property_type &lt;chr&gt;, room_type &lt;chr&gt;,
-## #   accommodates &lt;dbl&gt;, bathrooms &lt;dbl&gt;, bedrooms &lt;dbl&gt;, beds &lt;dbl&gt;,
-## #   bed_type &lt;chr&gt;, amenities &lt;chr&gt;, square_feet &lt;dbl&gt;, price &lt;dbl&gt;,
-## #   weekly_price &lt;dbl&gt;, monthly_price &lt;dbl&gt;, security_deposit &lt;dbl&gt;,
-## #   cleaning_fee &lt;dbl&gt;, guests_included &lt;dbl&gt;, extra_people &lt;dbl&gt;,
-## #   minimum_nights &lt;dbl&gt;, maximum_nights &lt;dbl&gt;, availability_30 &lt;dbl&gt;,
-## #   availability_60 &lt;dbl&gt;, availability_90 &lt;dbl&gt;, availability_365 &lt;dbl&gt;,
-## #   number_of_reviews &lt;dbl&gt;, number_of_reviews_ltm &lt;dbl&gt;,
-## #   review_scores_rating &lt;dbl&gt;, reviews_per_month &lt;dbl&gt;</code></pre>
 <pre class="r"><code>selected_dat %&gt;%
   mutate(host_response_rate = 
            ifelse(host_response_rate == 'N/A', 0, as.double(str_replace(host_response_rate, '%', ''))/100.0))</code></pre>
