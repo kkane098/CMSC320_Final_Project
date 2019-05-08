@@ -9,12 +9,58 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r load_csv}
+## Introduction:
+This tutorial will walk you through many of the major aspects of data science, including data cleaning, exploratory data analysis, hypothesis testing, machine learning, and curation of a message.
+
+To begin, let's examine the dataset we will be using throughout this tutorial.  This dataset contains data from thousands of AirBnb listings in San Fransisco.  To download the data we are using, visit http://insideairbnb.com/get-the-data.html and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
+```{r load_csv, warning=FALSE, message=FALSE}
 library(tidyverse)
 dat <- read_csv("listings_sf_all.csv")
+head(dat)
+```
+Note that this code will only work if it is run in the same directory as the csv, otherwise you need to pass read_csv the full filepath to where the csv is stored.
+
+
+## Part 1 - Cleaning:
+Often, as is the case here, when you load your data you will need to do some extra processing to make it easier to use in later analysis. This step is commonly referred to as **cleaning**.  
+
+For example, this dataset has all the information you would expect to find in an AirBnb listing, but much of that information, such as URL data and text descriptions, is not especially useful for analysis. So, a good first step is to eliminate unnecessary columns to make the data a little easier to read and work with. A good tool to do this is the select() function, which can be passed a list of columns from a data frame and will return a new data frame with only those columns.  The following select call should leave us with only the useful data.
+
+```{r select_dat}
+selected_dat <- dat %>% select(host_id, host_since, host_response_time, host_response_rate, host_is_superhost, host_listings_count, host_identity_verified, neighbourhood_cleansed, zipcode, latitude, longitude, property_type, room_type, accommodates, bathrooms, bedrooms, beds, bed_type, amenities, square_feet, price, weekly_price, monthly_price, security_deposit, cleaning_fee, guests_included, extra_people, minimum_nights, maximum_nights, availability_30, availability_60, availability_90, availability_365, number_of_reviews, number_of_reviews_ltm, review_scores_rating, reviews_per_month)
+head(selected_dat)
+```
+As you can see, this new data frame is much cleaner and will be easier to work with going forward.
+
+However, we are far from done with cleaning. A closer inspection of some of the columns reveals a new issue.
+```{r explanation_1}
+head(selected_dat %>% select(amenities, price, weekly_price, monthly_price))
 ```
 
-```{r clean_dat}
-selected_dat <- dat %>% select(host_id, host_since, host_response_time, host_response_rate, host_is_superhost, host_listings_count, host_identity_verified, neighbourhood_cleansed, zipcode, latitude, longitude, property_type, room_type, accommodates, bathrooms, bedrooms, beds, bed_type, amenities, square_feet, price, weekly_price, monthly_price, security_deposit, cleaning_fee, guests_included, extra_people, minimum_nights, maximum_nights, availability_30, availability_60, availability_90, availability_365, number_of_reviews, number_of_reviews_ltm, review_scores_rating, reviews_per_month)
-selected_dat
+Many of the columns in our dataset are in forms that make them tricky to deal with.  For example, all the prices are still stored as strings, when we would really like them to be stored as doubles.  Additionally, the amenities column has a lot of useful information about the listing, but that information is difficult to use as is.
+
+Let's start by extracting the useful data from the amenities column.  A key function we'll use here is the mutate() function, which stores the result of an operation preformed on a column in a new column.  Combining mutate() with the str_detect() function allows us to create several new logical columns that represent the data contained in the amenities column in a way that will make it much easier to use later.
+
+```{r fix_amenities}
+fixed_amenities <- selected_dat %>% 
+  mutate(has_internet = str_detect(amenities, "Wifi") || str_detect(amenities, "Internet")) %>%
+  mutate(has_tv = str_detect(amenities, "TV")) %>%
+  mutate(has_kitchen = str_detect(amenities, "Kitchen")) %>%
+  mutate(has_washer = str_detect(amenities, "Washer")) %>%
+  mutate(has_dryer = str_detect(amenities, "Dryer")) %>%
+  mutate(has_heating = str_detect(amenities, "Heating")) %>%
+  mutate(has_ac = str_detect(amenities, "Air conditioning")) %>% 
+  mutate(pets_allowed = str_detect(amenities, "Pets allowed")) %>%
+  select(-amenities)
+head(fixed_amenities %>% select(has_internet, has_tv, has_kitchen, has_washer, has_dryer, has_heating, has_ac, pets_allowed))
+```
+
+```{r make_factors}
+factor_dat <- fixed_amenities %>% 
+  mutate(property_type = factor(property_type)) %>%
+  mutate(room_type = factor(room_type)) %>%
+  mutate(zipcode = factor(zipcode)) %>%
+  mutate(neighbourhood = factor(neighbourhood_cleansed)) %>%
+  select(-neighbourhood_cleansed)
+head(factor_dat)
 ```
