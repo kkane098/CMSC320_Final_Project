@@ -59,22 +59,35 @@ fixed_amenities <- selected_dat %>%
 head(fixed_amenities %>% select(has_internet, has_tv, has_kitchen, has_washer, has_dryer, has_heating, has_ac, pets_allowed))
 ```
 
+Now let's take a look at the price columns.  Currently, prices are stored as strings and cannot be converted to doubles because of the presence of '$' and ',' characters.  However, these can be removed by calling str_replace() with the empty string.  After that, we can safely convert the price columns to doubles using as.double().
 
 ```{r fix_prices}
-
-selected_dat %>% 
+fixed_prices <- fixed_amenities %>% 
   mutate(price            = as.double(str_replace(str_replace(price,            ',', ''), '\\$', ''))) %>%
   mutate(weekly_price     = as.double(str_replace(str_replace(weekly_price,     ',', ''), '\\$', ''))) %>%
   mutate(monthly_price    = as.double(str_replace(str_replace(monthly_price,    ',', ''), '\\$', ''))) %>%
   mutate(security_deposit = as.double(str_replace(str_replace(security_deposit, ',', ''), '\\$', ''))) %>%
   mutate(cleaning_fee     = as.double(str_replace(str_replace(cleaning_fee,     ',', ''), '\\$', ''))) %>%
-  mutate(extra_people     = as.double(str_replace(str_replace(extra_people,     ',', ''), '\\$', ''))) %>%
-  
+  mutate(extra_people     = as.double(str_replace(str_replace(extra_people,     ',', ''), '\\$', '')))
+```
+
+However, there is still a problem with the prices. 
+
+```{r explanation_2}
+head(fixed_prices %>% select(price, weekly_price, monthly_price, security_deposit, cleaning_fee, extra_people))
+```
+
+As you can see, several prices are encoded as 'NA' in the table.  This is referred to as **missing data** and there are several ways to deal with it.  General options are to replace the missing data with the mean value of the column or the predicted value from some model.  However, in this case we can use our knowledge of the data to replace the missing values.  The weekly_price and monthly_price columns represent special rates provided by the owner of the listing for visitors with longer stays.  If they are 'NA', that means that there is no discount and those missing values can be replaced by the nightly price (the price column) multiplied by 7 or 30 respectively.  We can also safely assume that if the security_deposit or cleaning_fee columns are 'NA' that there is no required security deposit or cleaning fee, so those missing values can be replaced with 0.
+
+```{r fix_prices_2}
+fixed_prices <- fixed_prices %>%
   mutate(weekly_price     = ifelse(is.na(weekly_price),     price*7, weekly_price)) %>%
   mutate(monthly_price    = ifelse(is.na(monthly_price),    price*30, monthly_price)) %>%
   mutate(security_deposit = ifelse(is.na(security_deposit), 0, security_deposit)) %>%
   mutate(cleaning_fee     = ifelse(is.na(cleaning_fee),     0, cleaning_fee))
+head(fixed_prices %>% select(price, weekly_price, monthly_price, security_deposit, cleaning_fee, extra_people))
 ```
+
 
 ```{r fix_hosts}
 selected_dat %>%
