@@ -88,15 +88,10 @@ fixed_prices <- fixed_prices %>%
 head(fixed_prices %>% select(price, weekly_price, monthly_price, security_deposit, cleaning_fee, extra_people))
 ```
 
-
-```{r fix_hosts}
-selected_dat %>%
-  mutate(host_response_rate = 
-           ifelse(host_response_rate == 'N/A', 0, as.double(str_replace(host_response_rate, '%', ''))/100.0))
-```
+Another thing that will be helpful later is encoding the columns that represent categorical variables (variables that can take on a value from a small set of values) as factors. We can do this using the factor() function.
 
 ```{r make_factors}
-factor_dat <- fixed_amenities %>% 
+factor_dat <- fixed_prices %>% 
   mutate(property_type = factor(property_type)) %>%
   mutate(room_type = factor(room_type)) %>%
   mutate(zipcode = factor(zipcode)) %>%
@@ -104,5 +99,20 @@ factor_dat <- fixed_amenities %>%
   mutate(host_response_time = factor(host_response_time)) %>%
   mutate(bed_type = factor(bed_type)) %>%
   select(-neighbourhood_cleansed)
-head(factor_dat)
+head(factor_dat %>% select(property_type, room_type, neighbourhood, host_response_time, bed_type))
+```
+
+Storing these columns as factors allows us to easily check the range of values stored in each column using the levels() function. For example, the following code displays all the property types represented in the data.
+
+```{r explanation_3}
+levels(factor_dat$property_type)
+```
+
+For more information on factors in R and why they are useful check [here](https://www.stat.berkeley.edu/~s133/factors.html).
+
+
+```{r fix_hosts}
+selected_dat %>%
+  mutate(host_response_rate = 
+           ifelse(host_response_rate == 'N/A', 0, as.double(str_replace(host_response_rate, '%', ''))/100.0))
 ```

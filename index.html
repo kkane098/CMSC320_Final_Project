@@ -338,7 +338,63 @@ head(fixed_amenities %&gt;% select(has_internet, has_tv, has_kitchen, has_washer
   mutate(weekly_price     = ifelse(is.na(weekly_price),     price*7, weekly_price)) %&gt;%
   mutate(monthly_price    = ifelse(is.na(monthly_price),    price*30, monthly_price)) %&gt;%
   mutate(security_deposit = ifelse(is.na(security_deposit), 0, security_deposit)) %&gt;%
-  mutate(cleaning_fee     = ifelse(is.na(cleaning_fee),     0, cleaning_fee))</code></pre>
+  mutate(cleaning_fee     = ifelse(is.na(cleaning_fee),     0, cleaning_fee))
+head(fixed_prices %&gt;% select(price, weekly_price, monthly_price, security_deposit, cleaning_fee, extra_people))</code></pre>
+<pre><code>## # A tibble: 6 x 6
+##   price weekly_price monthly_price security_deposit cleaning_fee
+##   &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;        &lt;dbl&gt;
+## 1   170         1120          4200              100          100
+## 2   235         1600          5500                0          100
+## 3    65          485          1685              200           50
+## 4    65          490          1685              200           50
+## 5   785         5495         23550                0          225
+## 6   255         1785          7650                0          125
+## # ... with 1 more variable: extra_people &lt;dbl&gt;</code></pre>
+<p>Another thing that will be helpful later is encoding the columns that represent categorical variables (variables that can take on a value from a small set of values) as factors. We can do this using the factor() function.</p>
+<pre class="r"><code>factor_dat &lt;- fixed_prices %&gt;% 
+  mutate(property_type = factor(property_type)) %&gt;%
+  mutate(room_type = factor(room_type)) %&gt;%
+  mutate(zipcode = factor(zipcode)) %&gt;%
+  mutate(neighbourhood = factor(neighbourhood_cleansed)) %&gt;%
+  mutate(host_response_time = factor(host_response_time)) %&gt;%
+  mutate(bed_type = factor(bed_type)) %&gt;%
+  select(-neighbourhood_cleansed)
+head(factor_dat)</code></pre>
+<pre><code>## # A tibble: 6 x 44
+##   host_id host_since host_response_t~ host_response_r~ host_is_superho~
+##     &lt;dbl&gt; &lt;date&gt;     &lt;fct&gt;            &lt;chr&gt;            &lt;lgl&gt;           
+## 1    1169 2008-07-31 within an hour   100%             TRUE            
+## 2    8904 2009-03-02 within a day     80%              FALSE           
+## 3   21994 2009-06-17 within a few ho~ 100%             FALSE           
+## 4   21994 2009-06-17 within a few ho~ 100%             FALSE           
+## 5   24215 2009-07-02 within an hour   100%             FALSE           
+## 6   25601 2009-07-14 within a day     70%              FALSE           
+## # ... with 39 more variables: host_listings_count &lt;dbl&gt;,
+## #   host_identity_verified &lt;lgl&gt;, zipcode &lt;fct&gt;, latitude &lt;dbl&gt;,
+## #   longitude &lt;dbl&gt;, property_type &lt;fct&gt;, room_type &lt;fct&gt;,
+## #   accommodates &lt;dbl&gt;, bathrooms &lt;dbl&gt;, bedrooms &lt;dbl&gt;, beds &lt;dbl&gt;,
+## #   bed_type &lt;fct&gt;, square_feet &lt;dbl&gt;, price &lt;dbl&gt;, weekly_price &lt;dbl&gt;,
+## #   monthly_price &lt;dbl&gt;, security_deposit &lt;dbl&gt;, cleaning_fee &lt;dbl&gt;,
+## #   guests_included &lt;dbl&gt;, extra_people &lt;dbl&gt;, minimum_nights &lt;dbl&gt;,
+## #   maximum_nights &lt;dbl&gt;, availability_30 &lt;dbl&gt;, availability_60 &lt;dbl&gt;,
+## #   availability_90 &lt;dbl&gt;, availability_365 &lt;dbl&gt;,
+## #   number_of_reviews &lt;dbl&gt;, number_of_reviews_ltm &lt;dbl&gt;,
+## #   review_scores_rating &lt;dbl&gt;, reviews_per_month &lt;dbl&gt;,
+## #   has_internet &lt;lgl&gt;, has_tv &lt;lgl&gt;, has_kitchen &lt;lgl&gt;, has_washer &lt;lgl&gt;,
+## #   has_dryer &lt;lgl&gt;, has_heating &lt;lgl&gt;, has_ac &lt;lgl&gt;, pets_allowed &lt;lgl&gt;,
+## #   neighbourhood &lt;fct&gt;</code></pre>
+<p>Storing these columns as factors allows us to easily check the range of values stored in each column using the levels() function. For example, the following code displays all the property types represented in the data.</p>
+<pre class="r"><code>levels(factor_dat$property_type)</code></pre>
+<pre><code>##  [1] &quot;Aparthotel&quot;         &quot;Apartment&quot;          &quot;Bed and breakfast&quot; 
+##  [4] &quot;Boat&quot;               &quot;Boutique hotel&quot;     &quot;Bungalow&quot;          
+##  [7] &quot;Cabin&quot;              &quot;Castle&quot;             &quot;Condominium&quot;       
+## [10] &quot;Cottage&quot;            &quot;Earth house&quot;        &quot;Guest suite&quot;       
+## [13] &quot;Guesthouse&quot;         &quot;Hostel&quot;             &quot;Hotel&quot;             
+## [16] &quot;House&quot;              &quot;In-law&quot;             &quot;Loft&quot;              
+## [19] &quot;Other&quot;              &quot;Resort&quot;             &quot;Serviced apartment&quot;
+## [22] &quot;Timeshare&quot;          &quot;Tiny house&quot;         &quot;Townhouse&quot;         
+## [25] &quot;Treehouse&quot;          &quot;Villa&quot;</code></pre>
+<p>For more information on factors in R and why they are useful check <a href="https://www.stat.berkeley.edu/~s133/factors.html">here</a>.</p>
 <pre class="r"><code>selected_dat %&gt;%
   mutate(host_response_rate = 
            ifelse(host_response_rate == 'N/A', 0, as.double(str_replace(host_response_rate, '%', ''))/100.0))</code></pre>
@@ -369,38 +425,6 @@ head(fixed_amenities %&gt;% select(has_internet, has_tv, has_kitchen, has_washer
 ## #   availability_60 &lt;dbl&gt;, availability_90 &lt;dbl&gt;, availability_365 &lt;dbl&gt;,
 ## #   number_of_reviews &lt;dbl&gt;, number_of_reviews_ltm &lt;dbl&gt;,
 ## #   review_scores_rating &lt;dbl&gt;, reviews_per_month &lt;dbl&gt;</code></pre>
-<pre class="r"><code>factor_dat &lt;- fixed_amenities %&gt;% 
-  mutate(property_type = factor(property_type)) %&gt;%
-  mutate(room_type = factor(room_type)) %&gt;%
-  mutate(zipcode = factor(zipcode)) %&gt;%
-  mutate(neighbourhood = factor(neighbourhood_cleansed)) %&gt;%
-  mutate(host_response_time = factor(host_response_time)) %&gt;%
-  mutate(bed_type = factor(bed_type)) %&gt;%
-  select(-neighbourhood_cleansed)
-head(factor_dat)</code></pre>
-<pre><code>## # A tibble: 6 x 44
-##   host_id host_since host_response_t~ host_response_r~ host_is_superho~
-##     &lt;dbl&gt; &lt;date&gt;     &lt;fct&gt;            &lt;chr&gt;            &lt;lgl&gt;           
-## 1    1169 2008-07-31 within an hour   100%             TRUE            
-## 2    8904 2009-03-02 within a day     80%              FALSE           
-## 3   21994 2009-06-17 within a few ho~ 100%             FALSE           
-## 4   21994 2009-06-17 within a few ho~ 100%             FALSE           
-## 5   24215 2009-07-02 within an hour   100%             FALSE           
-## 6   25601 2009-07-14 within a day     70%              FALSE           
-## # ... with 39 more variables: host_listings_count &lt;dbl&gt;,
-## #   host_identity_verified &lt;lgl&gt;, zipcode &lt;fct&gt;, latitude &lt;dbl&gt;,
-## #   longitude &lt;dbl&gt;, property_type &lt;fct&gt;, room_type &lt;fct&gt;,
-## #   accommodates &lt;dbl&gt;, bathrooms &lt;dbl&gt;, bedrooms &lt;dbl&gt;, beds &lt;dbl&gt;,
-## #   bed_type &lt;fct&gt;, square_feet &lt;dbl&gt;, price &lt;chr&gt;, weekly_price &lt;chr&gt;,
-## #   monthly_price &lt;chr&gt;, security_deposit &lt;chr&gt;, cleaning_fee &lt;chr&gt;,
-## #   guests_included &lt;dbl&gt;, extra_people &lt;chr&gt;, minimum_nights &lt;dbl&gt;,
-## #   maximum_nights &lt;dbl&gt;, availability_30 &lt;dbl&gt;, availability_60 &lt;dbl&gt;,
-## #   availability_90 &lt;dbl&gt;, availability_365 &lt;dbl&gt;,
-## #   number_of_reviews &lt;dbl&gt;, number_of_reviews_ltm &lt;dbl&gt;,
-## #   review_scores_rating &lt;dbl&gt;, reviews_per_month &lt;dbl&gt;,
-## #   has_internet &lt;lgl&gt;, has_tv &lt;lgl&gt;, has_kitchen &lt;lgl&gt;, has_washer &lt;lgl&gt;,
-## #   has_dryer &lt;lgl&gt;, has_heating &lt;lgl&gt;, has_ac &lt;lgl&gt;, pets_allowed &lt;lgl&gt;,
-## #   neighbourhood &lt;fct&gt;</code></pre>
 </div>
 
 
