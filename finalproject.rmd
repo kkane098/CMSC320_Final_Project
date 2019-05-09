@@ -9,10 +9,24 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r include = FALSE}
+read_csv <- "[read_csv()](https://readr.tidyverse.org/reference/read_delim.html)"
+
+select <- "[select()](https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/select)"
+mutate <- "[mutate()](https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/mutate)"
+filter <- "[filter()](https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/filter)"
+factor <- "[factor()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/factor)"
+levels <- "[levels()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/levels)"
+
+str_detect <- "[str_detect()](https://www.rdocumentation.org/packages/stringr/versions/1.4.0/topics/str_detect)"
+str_replace <- "[str_replace()](https://www.rdocumentation.org/packages/stringr/versions/1.4.0/topics/str_replace)"
+as.double <- "[as.double()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/double)"
+```
+
 ## Introduction:
 This tutorial will walk you through many of the major aspects of data science, including data cleaning, exploratory data analysis, hypothesis testing, machine learning, and curation of a message.
 
-To begin, let's examine the dataset we will be using throughout this tutorial.  This dataset contains data from thousands of AirBnb listings in San Fransisco.  To download the data we are using, visit http://insideairbnb.com/get-the-data.html and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
+To begin, let's examine the dataset we will be using throughout this tutorial.  This dataset contains data from thousands of AirBnb listings in San Fransisco.  To download the data we are using, visit [here](http://insideairbnb.com/get-the-data.html) and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
 
 ```{r load_csv, warning=FALSE, message=FALSE}
 library(tidyverse)
@@ -20,16 +34,23 @@ dat <- read_csv("listings_sf_all.csv")
 head(dat)
 ```
 
-Note that this code will only work if it is run in the same directory as the csv, otherwise you need to pass read_csv the full filepath to where the csv is stored.
-
+Note that this code will only work if it is run in the same directory as the csv, otherwise you need to pass `r read_csv` the full filepath to where the csv is stored.
 
 ## Part 1 - Cleaning:
 Often, as is the case here, when you load your data you will need to do some extra processing to make it easier to use in later analysis. This step is commonly referred to as **cleaning**.  
 
-For example, this dataset has all the information you would expect to find in an AirBnb listing, but much of that information, such as URL data and text descriptions, is not especially useful for analysis. So, a good first step is to eliminate unnecessary columns to make the data a little easier to read and work with. A good tool to do this is the select() function, which can be passed a list of columns from a data frame and will return a new data frame with only those columns.  The following select call should leave us with only the useful data.
+For example, this dataset has all the information you would expect to find in an AirBnb listing, but much of that information, such as URL data and text descriptions, is not especially useful for analysis. So, a good first step is to eliminate unnecessary columns to make the data a little easier to read and work with. A good tool to do this is the `r select` function, which can be passed a list of columns from a data frame and will return a new data frame with only those columns.  The following `r select` call should leave us with only the useful data.
 
 ```{r select_dat}
-selected_dat <- dat %>% select(host_id, host_since, host_response_time, host_response_rate, host_is_superhost, host_listings_count, host_identity_verified, neighbourhood_cleansed, zipcode, latitude, longitude, property_type, room_type, accommodates, bathrooms, bedrooms, beds, bed_type, amenities, square_feet, price, weekly_price, monthly_price, security_deposit, cleaning_fee, guests_included, extra_people, minimum_nights, maximum_nights, availability_30, availability_60, availability_90, availability_365, number_of_reviews, number_of_reviews_ltm, review_scores_rating, reviews_per_month)
+selected_dat <- dat %>% 
+  select(host_id, host_since, host_response_time, host_response_rate, 
+         host_is_superhost, host_listings_count, host_identity_verified, 
+         neighbourhood_cleansed, zipcode, latitude, longitude, 
+         property_type, room_type, accommodates, bathrooms, bedrooms, beds, bed_type, amenities, square_feet, 
+         price, weekly_price, monthly_price, security_deposit, cleaning_fee, guests_included, extra_people, 
+         minimum_nights, maximum_nights, availability_30, availability_60, availability_90, availability_365, 
+         number_of_reviews, number_of_reviews_ltm, review_scores_rating, reviews_per_month)
+
 head(selected_dat)
 ```
 
@@ -38,12 +59,14 @@ As you can see, this new data frame is much cleaner and will be easier to work w
 However, we are far from done with cleaning. A closer inspection of some of the columns reveals a new issue.
 
 ```{r explanation_1}
-head(selected_dat %>% select(amenities, price, weekly_price, monthly_price))
+selected_dat %>% 
+  select(amenities, price, weekly_price, monthly_price) %>%
+  head()
 ```
 
 Many of the columns in our dataset are in forms that make them tricky to deal with.  For example, all the prices are still stored as strings, when we would really like them to be stored as doubles.  Additionally, the amenities column has a lot of useful information about the listing, but that information is difficult to use as is.
 
-Let's start by extracting the useful data from the amenities column.  A key function we'll use here is the mutate() function, which stores the result of an operation preformed on a column in a new column.  Combining mutate() with the str_detect() function allows us to create several new logical columns that represent the data contained in the amenities column in a way that will make it much easier to use later. Having transferred all the useful data from the amenities column, we can also now safely remove it.
+Let's start by extracting the useful data from the amenities column.  A key function we'll use here is the `r mutate` function, which stores the result of an operation preformed on a column in a new column.  Combining `r mutate` with the `r str_detect` function allows us to create several new logical columns that represent the data contained in the amenities column in a way that will make it much easier to use later. Having transferred all the useful data from the amenities column, we can also now safely remove it.
 
 ```{r fix_amenities}
 fixed_amenities <- selected_dat %>% 
@@ -56,10 +79,13 @@ fixed_amenities <- selected_dat %>%
   mutate(has_ac = str_detect(amenities, "Air conditioning")) %>% 
   mutate(pets_allowed = str_detect(amenities, "Pets allowed")) %>%
   select(-amenities)
-head(fixed_amenities %>% select(has_internet, has_tv, has_kitchen, has_washer, has_dryer, has_heating, has_ac, pets_allowed))
+
+fixed_amenities %>% 
+  select(has_internet, has_tv, has_kitchen, has_washer, has_dryer, has_heating, has_ac, pets_allowed) %>%
+  head()
 ```
 
-Now let's take a look at the price columns.  Currently, prices are stored as strings and cannot be converted to doubles because of the presence of '$' and ',' characters.  However, these can be removed by calling str_replace() with the empty string.  After that, we can safely convert the price columns to doubles using as.double().
+Now let's take a look at the price columns.  Currently, prices are stored as strings and cannot be converted to doubles because of the presence of '$' and ',' characters.  However, these can be removed by calling `r str_replace` with the empty string.  After that, we can safely convert the price columns to doubles using `r as.double`.
 
 ```{r fix_prices}
 fixed_prices <- fixed_amenities %>% 
@@ -74,7 +100,9 @@ fixed_prices <- fixed_amenities %>%
 However, there is still a problem with the prices. 
 
 ```{r explanation_2}
-head(fixed_prices %>% select(price, weekly_price, monthly_price, security_deposit, cleaning_fee, extra_people))
+fixed_prices %>% 
+  select(price, weekly_price, monthly_price, security_deposit, cleaning_fee, extra_people) %>% 
+  head()
 ```
 
 As you can see, several prices are encoded as 'NA' in the table.  This is referred to as **missing data** and there are several ways to deal with it.  General options are to replace the missing data with the mean value of the column or the predicted value from some model.  However, in this case we can use our knowledge of the data to replace the missing values.  The weekly_price and monthly_price columns represent special rates provided by the owner of the listing for visitors with longer stays.  If they are 'NA', that means that there is no discount and those missing values can be replaced by the nightly price (the price column) multiplied by 7 or 30 respectively.  We can also safely assume that if the security_deposit or cleaning_fee columns are 'NA' that there is no required security deposit or cleaning fee, so those missing values can be replaced with 0.
@@ -85,10 +113,13 @@ fixed_prices <- fixed_prices %>%
   mutate(monthly_price    = ifelse(is.na(monthly_price),    price*30, monthly_price)) %>%
   mutate(security_deposit = ifelse(is.na(security_deposit), 0, security_deposit)) %>%
   mutate(cleaning_fee     = ifelse(is.na(cleaning_fee),     0, cleaning_fee))
-head(fixed_prices %>% select(price, weekly_price, monthly_price, security_deposit, cleaning_fee, extra_people))
+
+fixed_prices %>% 
+  select(price, weekly_price, monthly_price, security_deposit, cleaning_fee, extra_people) %>%
+  head()
 ```
 
-Another thing that will be helpful later is encoding the columns that represent categorical variables (variables that can take on a value from a small set of values) as factors. We can do this using the factor() function.
+Another thing that will be helpful later is encoding the columns that represent categorical variables (variables that can take on a value from a small set of values) as factors. We can do this using the `r factor` function.
 
 ```{r make_factors}
 factor_dat <- fixed_prices %>% 
@@ -99,10 +130,13 @@ factor_dat <- fixed_prices %>%
   mutate(host_response_time = factor(host_response_time)) %>%
   mutate(bed_type = factor(bed_type)) %>%
   select(-neighbourhood_cleansed)
-head(factor_dat %>% select(property_type, room_type, neighbourhood, host_response_time, bed_type))
+
+factor_dat %>% 
+  select(property_type, room_type, neighbourhood, host_response_time, bed_type) %>%
+  head()
 ```
 
-Storing these columns as factors allows us to easily check the range of values stored in each column using the levels() function. For example, the following code displays all the property types represented in the data.
+Storing these columns as factors allows us to easily check the range of values stored in each column using the `r levels` function. For example, the following code displays all the property types represented in the data.
 
 ```{r explanation_3}
 levels(factor_dat$property_type)
@@ -112,7 +146,15 @@ For more information on factors in R and why they are useful check [here](https:
 
 
 ```{r fix_hosts}
-selected_dat %>%
-  mutate(host_response_rate = 
-           ifelse(host_response_rate == 'N/A', 0, as.double(str_replace(host_response_rate, '%', ''))/100.0))
+host_fixed_dat <- factor_dat %>%
+  mutate(host_response_rate = ifelse(is.na(host_response_rate), '0%', host_response_rate)) %>%
+  mutate(host_response_rate = ifelse(host_response_rate == 'N/A', '0%', host_response_rate)) %>%
+  mutate(host_response_rate = 0.01 * as.double(str_replace(host_response_rate, '%', '')))
+
+host_fixed_dat %>% filter(!is.na(square_feet))
 ```
+
+
+
+## References
+
