@@ -42,10 +42,6 @@ Often, as is the case here, when you load your data you will need to do some ext
 For example, this dataset has all the information you would expect to find in an AirBnb listing, but much of that information, such as URL data and text descriptions, is not especially useful for analysis. So, a good first step is to eliminate unnecessary columns to make the data a little easier to read and work with. A good tool to do this is the `r select` function, which can be passed a list of columns from a data frame and will return a new data frame with only those columns.  The following `r select` call should leave us with only the useful data.
 
 ```{r select_dat}
-<<<<<<< HEAD
-selected_dat <- dat %>% select(host_id, host_since, host_response_time, host_response_rate, host_is_superhost, host_listings_count, host_identity_verified, neighbourhood_cleansed, zipcode, latitude, longitude, property_type, room_type, accommodates, bathrooms, bedrooms, beds, bed_type, amenities, square_feet, price, weekly_price, monthly_price, security_deposit, cleaning_fee, guests_included, extra_people, minimum_nights, maximum_nights, availability_30, availability_60, availability_90, availability_365, number_of_reviews, number_of_reviews_ltm, review_scores_rating, reviews_per_month)
-selected_dat
-=======
 selected_dat <- dat %>% 
   select(host_id, host_since, host_response_time, host_response_rate, 
          host_is_superhost, host_listings_count, host_identity_verified, 
@@ -55,8 +51,7 @@ selected_dat <- dat %>%
          minimum_nights, maximum_nights, availability_30, availability_60, availability_90, availability_365, 
          number_of_reviews, number_of_reviews_ltm, review_scores_rating, reviews_per_month)
 
-head(selected_dat)
->>>>>>> c0631ede179e54860a98fecd3a90d50a1d8c49a6
+selected_dat %>% head()
 ```
 
 As you can see, this new data frame is much cleaner and will be easier to work with going forward.
@@ -156,13 +151,39 @@ host_fixed_dat <- factor_dat %>%
   mutate(host_response_rate = ifelse(host_response_rate == 'N/A', '0%', host_response_rate)) %>%
   mutate(host_response_rate = 0.01 * as.double(str_replace(host_response_rate, '%', '')))
 
-host_fixed_dat %>% filter(!is.na(square_feet))
+host_fixed_dat %>% select(host_response_rate) %>% head()
 ```
 
 
-<<<<<<< HEAD
-=======
+## EDA
 
-## References
+```{r boxplots, message= FALSE, warning= FALSE}
+host_fixed_dat %>% 
+  ggplot(aes(x="", y = price)) + 
+  geom_boxplot() + 
+  labs(title = "Distribution of Price", y = "Price", x = "")
+  
+log_price_dat <- host_fixed_dat %>% mutate(log_price = log10(price))
 
->>>>>>> c0631ede179e54860a98fecd3a90d50a1d8c49a6
+log_price_dat %>% 
+  ggplot(aes(x="", y = log_price)) + 
+  geom_boxplot() + 
+  labs(title = "Distribution of Transformed Price", y = "Price (logbase10)", x = "")
+
+log_price_dat %>% 
+  ggplot(aes(x = neighbourhood, y = log_price, group = neighbourhood)) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  labs(title = "Distribution of Price by Neighbourhood", y = "Price (logbase10)", x = "Neighbourhood")
+
+log_price_dat %>% 
+  ggplot(aes(x = property_type, y = log_price, group = property_type)) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  labs(title = "Distribution of Price by Property Type", y = "Price (logbase10)", x = "Property Type")
+
+log_price_dat %>% ggplot(aes(x = has_ac, y = log_price)) + 
+  geom_boxplot() +
+  labs(title = "Distribution of Price Based on Whether Listing has Air Conditioning", y = "Price (logbase10)", x = "Has AC?")
+
+```
