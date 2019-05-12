@@ -17,6 +17,7 @@ mutate <- "[mutate()](https://www.rdocumentation.org/packages/dplyr/versions/0.7
 filter <- "[filter()](https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/filter)"
 factor <- "[factor()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/factor)"
 levels <- "[levels()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/levels)"
+table <- "[tables()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/table)"
 
 str_detect <- "[str_detect()](https://www.rdocumentation.org/packages/stringr/versions/1.4.0/topics/str_detect)"
 str_replace <- "[str_replace()](https://www.rdocumentation.org/packages/stringr/versions/1.4.0/topics/str_replace)"
@@ -119,7 +120,7 @@ fixed_prices %>%
   head()
 ```
 
-Another thing that will be helpful later is encoding the columns that represent categorical variables (variables that can take on a value from a small set of values) as factors. We can do this using the `r factor` function.
+Another thing that will be helpful later is encoding the columns that represent categorical variables (variables that can take on a value from a small set of values) as factors. Specifically, we want to ensure that our model will treat variables like zipcode and bedrooms as categorical variables rather than continuous numbers. We can do this using the `r factor` function.
 
 ```{r make_factors}
 factor_dat <- fixed_prices %>% 
@@ -129,17 +130,23 @@ factor_dat <- fixed_prices %>%
   mutate(neighbourhood = factor(neighbourhood_cleansed)) %>%
   mutate(host_response_time = factor(host_response_time)) %>%
   mutate(bed_type = factor(bed_type)) %>%
+  mutate(bedrooms = factor(bedrooms)) %>%
+  mutate(bathrooms = factor(bathrooms)) %>%
+  mutate(beds = factor(beds)) %>%
+  mutate(accommodates = factor(accommodates)) %>%
   select(-neighbourhood_cleansed)
 
 factor_dat %>% 
-  select(property_type, room_type, neighbourhood, host_response_time, bed_type) %>%
+  select(property_type, room_type, zipcode, neighbourhood, host_response_time, bed_type, bedrooms, bathrooms, beds, accommodates) %>%
   head()
 ```
 
-Storing these columns as factors allows us to easily check the range of values stored in each column using the `r levels` function. For example, the following code displays all the property types represented in the data.
+Storing these columns as factors also allows us to easily check the range of values stored in each column using the `r levels` function. We can also easily view the number of rows associated with each value using the `r table` function.
 
 ```{r explanation_3}
 levels(factor_dat$property_type)
+
+table(factor_dat$bedrooms)
 ```
 
 For more information on factors in R and why they are useful check [here](https://www.stat.berkeley.edu/~s133/factors.html).
@@ -157,19 +164,35 @@ host_fixed_dat %>% select(host_response_rate) %>% head()
 
 ## EDA
 
-```{r boxplots, message= FALSE, warning= FALSE}
+```{r log_dat, message= FALSE, warning= FALSE}
 host_fixed_dat %>% 
   ggplot(aes(x="", y = price)) + 
   geom_boxplot() + 
   labs(title = "Distribution of Price", y = "Price", x = "")
-  
+
+skew_dat <- host_fixed_dat %>% summarise(median = median(price), 
+                                         first_q = quantile(price, 1/4), 
+                                         third_q = quantile(price, 3/4)) %>%
+  mutate(skew = (median - first_q) - (third_q - median))
+
+skew_dat
+
 log_price_dat <- host_fixed_dat %>% mutate(log_price = log10(price))
+
+log_skew_dat <- log_price_dat %>% summarise(median = median(log_price), 
+                                             first_q = quantile(log_price, 1/4), 
+                                             third_q = quantile(log_price, 3/4)) %>% 
+  mutate(skew = (median - first_q) - (third_q - median))
+
+log_skew_dat
 
 log_price_dat %>% 
   ggplot(aes(x="", y = log_price)) + 
   geom_boxplot() + 
   labs(title = "Distribution of Transformed Price", y = "Price (logbase10)", x = "")
+```
 
+```{r boxplots, message= FALSE, warning= FALSE}
 log_price_dat %>% 
   ggplot(aes(x = neighbourhood, y = log_price, group = neighbourhood)) + 
   geom_boxplot() + 
@@ -182,8 +205,45 @@ log_price_dat %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   labs(title = "Distribution of Price by Property Type", y = "Price (logbase10)", x = "Property Type")
 
+log_price_dat %>% 
+  ggplot(aes(x = room_type, y = log_price, group = room_type)) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  labs(title = "Distribution of Price by Room Type", y = "Price (logbase10)", x = "Room Type")
+
+log_price_dat %>% 
+  ggplot(aes(x = bedrooms, y = log_price, group = bedrooms)) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  labs(title = "Distribution of Price by Number of Bedrooms", y = "Price (logbase10)", x = "Bedrooms")
+
 log_price_dat %>% ggplot(aes(x = has_ac, y = log_price)) + 
   geom_boxplot() +
   labs(title = "Distribution of Price Based on Whether Listing has Air Conditioning", y = "Price (logbase10)", x = "Has AC?")
 
 ```
+
+```{r models}
+library(broom)
+model1 <- lm(price~bedrooms+bathrooms, data = log_price_dat %>% filter(price <= 2500))
+model1_coeffs <- model1 %>% tidy()
+model1_stats <- model1 %>% glance()
+
+model1_stats
+
+model2 <- lm(price~bedrooms+bathrooms+beds+accommodates+room_type+property_type+neighbourhood+has_ac+has_tv+has_washer+has_dryer+has_internet+has_kitchen+has_heating+pets_allowed+review_scores_rating, data = log_price_dat %>% filter(price <= 2500))
+model2_coeffs <- model2 %>% tidy()
+model2_stats <-model2 %>% glance()
+
+model2_stats
+
+model2_coeffs %>% filter(p.value <= .05)
+
+#might still cut bathrooms/beds
+model3 <- lm(price~bedrooms+beds+bathrooms+accommodates+room_type+neighbourhood+has_ac+has_tv+pets_allowed+review_scores_rating, data = log_price_dat %>% filter(price <= 2500))
+model3_coeffs <- model3 %>% tidy()
+model3_stats <- model3 %>% glance()
+
+model3_stats
+```
+
