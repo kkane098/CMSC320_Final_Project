@@ -250,13 +250,13 @@ log_price_dat %>% ggplot(aes(x = has_ac, y = log_price)) +
 
 ```{r models}
 library(broom)
-model1 <- lm(price~bedrooms+bathrooms, data = log_price_dat %>% filter(price <= 2500))
+model1 <- lm(log_price~bedrooms+bathrooms, data = log_price_dat %>% filter(price > 0))
 model1_coeffs <- model1 %>% tidy()
 model1_stats <- model1 %>% glance()
 
 model1_stats
 
-model2 <- lm(price~bedrooms+bathrooms+beds+accommodates+room_type+property_type+neighbourhood+has_ac+has_tv+has_washer+has_dryer+has_internet+has_kitchen+has_heating+pets_allowed+review_scores_rating, data = log_price_dat %>% filter(price <= 2500))
+model2 <- lm(log_price~bedrooms+bathrooms+beds+accommodates+room_type+property_type+neighbourhood+has_ac+has_tv+has_washer+has_dryer+has_internet+has_kitchen+has_heating+pets_allowed+review_scores_rating, data = log_price_dat %>% filter(price > 0))
 model2_coeffs <- model2 %>% tidy()
 model2_stats <-model2 %>% glance()
 
@@ -264,11 +264,13 @@ model2_stats
 
 model2_coeffs %>% filter(p.value <= .05)
 
-#might still cut bathrooms/beds
-model3 <- lm(price~bedrooms+beds+bathrooms+accommodates+room_type+neighbourhood+has_ac+has_tv+pets_allowed+review_scores_rating, data = log_price_dat %>% filter(price <= 2500))
+model3 <- lm(log_price~bedrooms+bathrooms+accommodates+room_type+property_type+neighbourhood+has_ac+has_tv+pets_allowed+review_scores_rating, data = log_price_dat %>% filter(price > 0))
 model3_coeffs <- model3 %>% tidy()
 model3_stats <- model3 %>% glance()
+model3_aug <- model3 %>% augment()
 
 model3_stats
+
+model3_aug %>% ggplot(aes(x=.fitted,y=.resid)) + geom_point() + geom_smooth(method = "loess") + labs(x="Fitted", y="Residual")
 ```
 
