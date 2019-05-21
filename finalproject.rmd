@@ -17,7 +17,11 @@ mutate <- "[mutate()](https://www.rdocumentation.org/packages/dplyr/versions/0.7
 filter <- "[filter()](https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/filter)"
 factor <- "[factor()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/factor)"
 levels <- "[levels()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/levels)"
-table <- "[tables()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/table)"
+table <- "[table()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/table)"
+lm <- "[lm()](https://www.rdocumentation.org/packages/stats/versions/3.6.0/topics/lm)"
+glance <- "[glance()](https://www.rdocumentation.org/packages/broom/versions/0.4.4/topics/glance)"
+tidy <- "[tidy()](https://www.rdocumentation.org/packages/broom/versions/0.4.4/topics/tidy)"
+augment <- "[augment()](https://www.rdocumentation.org/packages/broom/versions/0.4.4/topics/augment)"
 
 str_detect <- "[str_detect()](https://www.rdocumentation.org/packages/stringr/versions/1.4.0/topics/str_detect)"
 str_replace <- "[str_replace()](https://www.rdocumentation.org/packages/stringr/versions/1.4.0/topics/str_replace)"
@@ -31,6 +35,7 @@ To begin, let's examine the dataset we will be using throughout this tutorial.  
 
 ```{r load_csv, warning=FALSE, message=FALSE}
 library(tidyverse)
+library(knitr)
 dat <- read_csv("listings_sf_all.csv")
 head(dat)
 ```
@@ -164,7 +169,7 @@ host_fixed_dat %>% select(host_response_rate) %>% head()
 
 ## EDA
 
-First, we do some simple graphs to get a better feel for the dataset. The first graph we do is of the distribution of prices. As you can see from the violin plot, the data is heavily skewed - the vast majority of prices are quite low, but there is a long tail of increasing prices going all the way up to $10,000.
+First, we do some simple graphs to get a better feel for the dataset. The first graph we plot is of the distribution of prices. As you can see from the violin plot, the data is heavily skewed - the vast majority of prices are quite low, but there is a long tail of increasing prices going all the way up to $10,000.
 
 ```{r log_dat, message= FALSE, warning= FALSE}
 host_fixed_dat %>% 
@@ -181,9 +186,8 @@ host_fixed_dat %>%
 
 Additionally, we can see that the median is also very different from the mean - they differ by almost $65 dollars. This high degree of skew makes the data difficult to work with and graph.
 ```{r}
-skew_dat <- host_fixed_dat %>% summarise(median = median(price), 
-                                         first_q = quantile(price, 1/4), 
-                                         third_q = quantile(price, 3/4)) %>%
+skew_dat <- host_fixed_dat %>% 
+  summarise(median = median(price), first_q = quantile(price, 1/4), third_q = quantile(price, 3/4)) %>%
   mutate(skew = (median - first_q) - (third_q - median))
 
 skew_dat
@@ -202,7 +206,7 @@ clean_dat <- host_fixed_dat %>% filter(price < 5000)
 
 
 ```{r}
-log_price_dat <- host_fixed_dat %>% mutate(log_price = log10(price))
+log_price_dat <- host_fixed_dat%>% filter(price > 0) %>% mutate(log_price = log10(price))
 
 log_skew_dat <- log_price_dat %>% summarise(median = median(log_price), 
                                              first_q = quantile(log_price, 1/4), 
@@ -248,31 +252,66 @@ log_price_dat %>% ggplot(aes(x = has_ac, y = log_price)) +
 
 ```
 
-```{r models}
+##Linear Modeling
+So, the work we did in EDA allowed us to examine general trends in how variables like number of bedrooms affect the price.  However, we cannot really make any conclusive statements about the quality of any these variables as predictors of price with the information we have so far.  This is where linear modeling comes in.  A **linear model** essentially refers an equation of the form $Y = B_0 + B_1X_1+ B_2X_2 ...$ representing a linear combination of independent variables used to predict the value of a single dependent variable (in this case price).  Using the `r lm` function, we can train a linear model to learn the appropriate values of the coefficients in the linear combination (the $B_i$s in the equation above).  We can then use functions from the broom library such as `r tidy`, `r glance`, and `r augment` to view information about the created model.  A more detailed explanation of linear models can be found [here](http://www.stat.yale.edu/Courses/1997-98/101/linreg.htm).
+
+```{r model1}
 library(broom)
-model1 <- lm(log_price~bedrooms+bathrooms, data = log_price_dat %>% filter(price > 0))
-model1_coeffs <- model1 %>% tidy()
+model1 <- lm(log_price~bedrooms+bathrooms, data = log_price_dat)
 model1_stats <- model1 %>% glance()
 
 model1_stats
+```
 
-model2 <- lm(log_price~bedrooms+bathrooms+beds+accommodates+room_type+property_type+neighbourhood+has_ac+has_tv+has_washer+has_dryer+has_internet+has_kitchen+has_heating+pets_allowed+review_scores_rating, data = log_price_dat %>% filter(price > 0))
-model2_coeffs <- model2 %>% tidy()
+In the code above, we model the log of the price of a listing using only the number of bedrooms and bathrooms.  However, a look at the output of the `r glance` function tells us this model is not very good.  The $R^2$ value is a measure of how well the model fits the data.  In a good model, we want this value to be as close to 1 as possible.  However, the fact that this model's $R^2$ value is so low is not that surprising, there are obviously many more factors that affect the price of a listing than just the number of bedrooms and bathrooms.  So let's try a model that incorporates more variables.
+
+```{r model2}
+model2 <- lm(log_price~bedrooms+bathrooms+beds+accommodates+room_type+property_type+neighbourhood+has_ac+has_tv+has_washer+has_dryer+has_internet+has_kitchen+has_heating+pets_allowed+review_scores_rating, data = log_price_dat)
 model2_stats <-model2 %>% glance()
 
 model2_stats
+```
 
-model2_coeffs %>% filter(p.value <= .05)
+As expected, this model, which uses almost all of the useful columns from the dataset, is much better.  But do we really need all of these variables?  In general, in order to make your model as clear as possible you only want to include the variables that have a clear effect on the output variable.  This is where an element of **hypothesis testing** comes into play.  In this case, the hypothesis we want to test is whether a specific variable has any impact on the price.  However, this is difficult to prove directly, so we instead make use of a **null hypothesis**, which in this case is that a specific variable has no effect on the price.  If the probability of the null hypothesis being true is low (conventionally <.05), then we can reject it, meaning we can say with high probability the variable has an effect on the price.  Conveniently, the `r tidy` function includes the probabilities associated with the null hypothesis for each variable.
 
-model3 <- lm(log_price~bedrooms+bathrooms+accommodates+room_type+property_type+neighbourhood+has_ac+has_tv+pets_allowed+review_scores_rating, data = log_price_dat %>% filter(price > 0))
+```{r}
+model2_coeffs <- model2 %>% tidy()
+
+model2_coeffs %>% head()
+```
+
+So let's examine the variables for which we cannot reject the null hypothesis.
+
+```{r}
+model2_coeffs %>% filter(p.value > .05) %>% kable()
+```
+
+We clearly cannot say anything meaningful about the effect the presence of a washer, dryer, or kitchen has on price.  However, analysis of the other variables is a little trickier, as the other variables all represent portions of a single categorical variable.  So how do we handle categorical variables for which we can only reject the null hypothesis for some of the domain? Here, it is best to do so on a case by case basis.  For property_type, neighborhood, and accomodates, the values for which we cannot reject the null hypothesis represent a relatively small portion of the domain, so discarding these variables entirely would likely be unwise.  For beds and bathrooms, it is best to examine the distribution of listings across the domain.
+
+```{r}
+table(log_price_dat$bathrooms)
+table(log_price_dat$beds)
+```
+
+As you can see, the values of bathrooms for which we cannot reject the null hypothesis represent a very small number of listings.  In contrast, the values of beds for which we cannot reject the null hypothesis represent a large portion of listings.  As such, we should still include bathrooms in our model, whereas beds can likely be disregarded.
+
+So let's examine a linear model without beds, has_kitchen, has_washer, and has_dryer.
+
+```{r model 3}
+model3 <- lm(log_price~bedrooms+bathrooms+accommodates+room_type+property_type+neighbourhood+has_ac+has_tv+pets_allowed+review_scores_rating, data = log_price_dat)
 model3_coeffs <- model3 %>% tidy()
 model3_stats <- model3 %>% glance()
 model3_aug <- model3 %>% augment()
 
 model3_stats
-
-model3_aug %>% ggplot(aes(x=.fitted,y=.resid)) + geom_point() + geom_smooth(method = "loess") + labs(x="Fitted", y="Residual")
-
-model3_coeffs %>% mutate(multiplier = 10^estimate)
 ```
 
+Even though we discarded four variables, the new model's $R^2$ value is only .001 lower! This means this smaller model will be much better to use going forward.
+
+However, before we can move on and analyze the coefficients in this new model, there is one last thing we should do.  In order to verify our assumption of a linear relationship between the variables and price, we need to ensure that there are no trends in the residuals (the difference between the predicted value and the observed value).  If our model is sound, the residuals should be uniformly and randomly clustered around 0 when plotted against the fitted value (the log price).
+
+```{r}
+model3_aug %>% ggplot(aes(x=.fitted,y=.resid)) + geom_point() + geom_smooth(method = "loess") + labs(x="Fitted", y="Residual")
+```
+
+As the above graph meets the listed requirements, our model is sound and can now be analyzed appropriately.
