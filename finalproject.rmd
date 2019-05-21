@@ -169,7 +169,7 @@ host_fixed_dat %>% select(host_response_rate) %>% head()
 
 ## EDA
 
-First, we do some simple graphs to get a better feel for the dataset. The first graph we plot is of the distribution of prices. As you can see from the violin plot, the data is heavily skewed - the vast majority of prices are quite low, but there is a long tail of increasing prices going all the way up to $10,000.
+First, we do some simple graphs to get a better feel for the dataset. The first graph we plot is of the distribution of prices. As you can see from the violin plot (`r geom_violin`), the data is heavily skewed - the vast majority of prices are quite low, but there is a long tail of increasing prices going all the way up to $10,000. 
 
 ```{r log_dat, message= FALSE, warning= FALSE}
 host_fixed_dat %>% 
@@ -178,14 +178,11 @@ host_fixed_dat %>%
   labs(title = "Distribution of Price", y = "Price", x = "")
 ```
 
-Skew is calculated by how far the median is from the average of the first and third quantile of the data. When calculating the skew for the price, we get a skew of \$35, which is quite significant given that the average price for an accomodation is \$213.
+Skew is calculated by how far the `r median` is from the average of the first and third `r quantile` of the data. When calculating the skew for the price, we get a skew of \$35, which is quite significant given that the average price for an accomodation is \$213. Additionally, we can see that the median is also very different from the mean - they differ by almost $65 dollars. This high degree of skew makes the data difficult to work with and graph.
 ```{r} 
 host_fixed_dat %>% 
   summarize(mean_price = mean(price))
-```
 
-Additionally, we can see that the median is also very different from the mean - they differ by almost $65 dollars. This high degree of skew makes the data difficult to work with and graph.
-```{r}
 skew_dat <- host_fixed_dat %>% 
   summarise(median = median(price), first_q = quantile(price, 1/4), third_q = quantile(price, 3/4)) %>%
   mutate(skew = (median - first_q) - (third_q - median))
@@ -204,9 +201,9 @@ host_fixed_dat %>%
 clean_dat <- host_fixed_dat %>% filter(price < 5000)
 ```
 
-
+However, even though the major outliers have been cleaned, there is still quite a range of valid prices - a little over 3 orders of magnitude. THe data still has a long tail of higher prices, which makes graphs difficult to read and interpret. Using a standard linear scale packs the vast majority of the data into a small slice near the bottom and leaves a lot of the upper graph blank. In order to make the graphs easier to interpret, we use a logarithmic scale (using the base 10 logarithmic function `r log10`). A log tansformation reduces skew, so the resulting graph is easier to read and analyze visually.
 ```{r}
-log_price_dat <- host_fixed_dat%>% filter(price > 0) %>% mutate(log_price = log10(price))
+log_price_dat <- clean_dat %>% filter(price > 0) %>% mutate(log_price = log10(price))
 
 log_skew_dat <- log_price_dat %>% summarise(median = median(log_price), 
                                              first_q = quantile(log_price, 1/4), 
@@ -221,31 +218,45 @@ log_price_dat %>%
   labs(title = "Distribution of Transformed Price", y = "Price (logbase10)", x = "")
 ```
 
-```{r boxplots, message= FALSE, warning= FALSE}
+We now want to do some Elementary Data Analysis. First, we plot our log(price) data against neighborhood in order to determine visually if price is based on neighborhood (we'll calculate this mathematically later).  This plot gives us some useful insights about certain neighborhoods. For example, Golden Gate Park has a very tightly clustered distribution with a couple of outliers. Presidio dhas no outliers, just a single cluster at a single price. This suggests that there are not that many listings in these locations and that the listings that are there are likely coordinated. In contrast, South of Market has a ton of ouutliers and a very smally box portion of the box plot. The small box describes a heavily clusted dataset, but the lack of dropoff suggests other factors at play in the price other than location. Overall, the graph doesn't show an obvious trand regarding location, but some neighborhoods trend higher than others. Marina is noticably more pricy than some other options, and Crocker Amazon is obviously cheaper.
+
+```{r boxplots1, message= FALSE, warning= FALSE}
 log_price_dat %>% 
   ggplot(aes(x = neighbourhood, y = log_price, group = neighbourhood)) + 
   geom_boxplot() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   labs(title = "Distribution of Price by Neighbourhood", y = "Price (logbase10)", x = "Neighbourhood")
+```
 
+The graph of property type is much more varied. Some properties, such as Castle, Earth House and Treehouse only have 1 entry, making their bar plot a single line. Others are a bit more spread, but still clustered reasonable cloely, such Boat, Cabin and Tiny House. The four of major interest however are Apartment, Condominium, Hotel and House. Hotel has a large cluster near the middle of its distriution and then a handul of outliers both above and below. We can see that hotel prices are controlled more closely than the others. Condos and houses both have the same "long tail" up towards higher prices, but apartment's tails go both above and below the mean, as well as are more populated with data.
+```{r boxplots2, message= FALSE, warning= FALSE}
 log_price_dat %>% 
   ggplot(aes(x = property_type, y = log_price, group = property_type)) + 
   geom_boxplot() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   labs(title = "Distribution of Price by Property Type", y = "Price (logbase10)", x = "Property Type")
+```
 
+Regarding room type the price differences are even more clear. Sharing a room is (quite understandably) seen as a detriment, while renting the enitire house costs noticably more. Having a private room falls somewhere in the middle. Again, we see the tails of higher prices, which notably follow the trend of the majority of the data set - the price difference carries across the board.
+```{r boxplots2, message= FALSE, warning= FALSE}
 log_price_dat %>% 
   ggplot(aes(x = room_type, y = log_price, group = room_type)) + 
   geom_boxplot() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   labs(title = "Distribution of Price by Room Type", y = "Price (logbase10)", x = "Room Type")
+```
 
+While some of the other metrics are luxuries, or at least involve some chice on the part of the renter, the number of bedrooms is usually a parameter of the search. The average price as a function of number of bedrooms looks linear by inspection (0 bedrooms corresponds to studio apartments, which usually have a pull-out bed, but no bedroom). We also notice that there is 1 place with 14 bedrooms that doesn't follow the trend, as well as a couple of N/A values, but the number of these is insignificant as compared with the size of the entire dataset. We'll go into more deatil on this later.
+```{r boxplots2, message= FALSE, warning= FALSE}
 log_price_dat %>% 
   ggplot(aes(x = bedrooms, y = log_price, group = bedrooms)) + 
   geom_boxplot() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   labs(title = "Distribution of Price by Number of Bedrooms", y = "Price (logbase10)", x = "Bedrooms")
+```
 
+Finally, we look at the impact of air conditioning. Given that the data is from California Airbnb's, AC is quite likely an important factor in people's choice of where to live. We see that places with AC are priced higher than places without, on average, but there are far more places without AC than with it. Additionally, the places with AC are more clustered - they have less outliers.
+```{r boxplots2, message= FALSE, warning= FALSE}
 log_price_dat %>% ggplot(aes(x = has_ac, y = log_price)) + 
   geom_boxplot() +
   labs(title = "Distribution of Price Based on Whether Listing has Air Conditioning", y = "Price (logbase10)", x = "Has AC?")
@@ -315,3 +326,4 @@ model3_aug %>% ggplot(aes(x=.fitted,y=.resid)) + geom_point() + geom_smooth(meth
 ```
 
 As the above graph meets the listed requirements, our model is sound and can now be analyzed appropriately.
+
