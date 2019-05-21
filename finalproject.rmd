@@ -47,7 +47,7 @@ selected_dat <- dat %>%
   select(host_id, host_since, host_response_time, host_response_rate, 
          host_is_superhost, host_listings_count, host_identity_verified, 
          neighbourhood_cleansed, zipcode, latitude, longitude, 
-         property_type, room_type, accommodates, bathrooms, bedrooms, beds, bed_type, amenities, square_feet, 
+         id, property_type, room_type, accommodates, bathrooms, bedrooms, beds, bed_type, amenities, square_feet, 
          price, weekly_price, monthly_price, security_deposit, cleaning_fee, guests_included, extra_people, 
          minimum_nights, maximum_nights, availability_30, availability_60, availability_90, availability_365, 
          number_of_reviews, number_of_reviews_ltm, review_scores_rating, reviews_per_month)
@@ -164,19 +164,44 @@ host_fixed_dat %>% select(host_response_rate) %>% head()
 
 ## EDA
 
+First, we do some simple graphs to get a better feel for the dataset. The first graph we do is of the distribution of prices. As you can see from the violin plot, the data is heavily skewed - the vast majority of prices are quite low, but there is a long tail of increasing prices going all the way up to $10,000.
+
 ```{r log_dat, message= FALSE, warning= FALSE}
 host_fixed_dat %>% 
   ggplot(aes(x="", y = price)) + 
-  geom_boxplot() + 
+  geom_violin() + 
   labs(title = "Distribution of Price", y = "Price", x = "")
+```
 
+Skew is calculated by how far the median is from the average of the first and third quantile of the data. When calculating the skew for the price, we get a skew of \$35, which is quite significant given that the average price for an accomodation is \$213.
+```{r} 
+host_fixed_dat %>% 
+  summarize(mean_price = mean(price))
+```
+
+Additionally, we can see that the median is also very different from the mean - they differ by almost $65 dollars. This high degree of skew makes the data difficult to work with and graph.
+```{r}
 skew_dat <- host_fixed_dat %>% summarise(median = median(price), 
                                          first_q = quantile(price, 1/4), 
                                          third_q = quantile(price, 3/4)) %>%
   mutate(skew = (median - first_q) - (third_q - median))
 
 skew_dat
+```
 
+In order to learn more about the skew, we took a closer look at the properties with cost greater than \$5000. There are only 5 of them in a dataset of more than 7,000, making them sigificant outliers. In order to get a better sense of what these data points were, we joined in the listing url to allow us to look at the whole listing. Because there are only 5 listings, we went through them individually so that we could find out what was happening. All 5 of these price values are incorrect - the first, second and fourth are 550, 60 and 1100 respectively, while the third and fifth listings are no longer availible. Given that these listings are all in error, we can safely remove them from the dataset.
+
+```{r}
+host_fixed_dat %>% 
+  filter(price >= 5000) %>%
+  select(id, price, number_of_reviews) %>%
+  inner_join(dat %>% select(id, listing_url), by=c("id"))
+
+clean_dat <- host_fixed_dat %>% filter(price < 5000)
+```
+
+
+```{r}
 log_price_dat <- host_fixed_dat %>% mutate(log_price = log10(price))
 
 log_skew_dat <- log_price_dat %>% summarise(median = median(log_price), 
