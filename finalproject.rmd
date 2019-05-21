@@ -247,5 +247,7 @@ model3_aug <- model3 %>% augment()
 model3_stats
 
 model3_aug %>% ggplot(aes(x=.fitted,y=.resid)) + geom_point() + geom_smooth(method = "loess") + labs(x="Fitted", y="Residual")
+
+model3_coeffs %>% mutate(multiplier = 10^estimate)
 ```
 
