@@ -22,6 +22,10 @@ lm <- "[lm()](https://www.rdocumentation.org/packages/stats/versions/3.6.0/topic
 glance <- "[glance()](https://www.rdocumentation.org/packages/broom/versions/0.4.4/topics/glance)"
 tidy <- "[tidy()](https://www.rdocumentation.org/packages/broom/versions/0.4.4/topics/tidy)"
 augment <- "[augment()](https://www.rdocumentation.org/packages/broom/versions/0.4.4/topics/augment)"
+geom_violin <- "[geom_violin()](https://www.rdocumentation.org/packages/ggplot2/versions/0.9.1/topics/geom_violin)"
+median <- "[median()](https://www.rdocumentation.org/packages/stats/versions/3.6.0/topics/median)"
+quantile <- "[quantile()](https://www.rdocumentation.org/packages/stats/versions/3.6.0/topics/quantile)"
+log10 <- "[log10()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/log)"
 
 str_detect <- "[str_detect()](https://www.rdocumentation.org/packages/stringr/versions/1.4.0/topics/str_detect)"
 str_replace <- "[str_replace()](https://www.rdocumentation.org/packages/stringr/versions/1.4.0/topics/str_replace)"
@@ -31,11 +35,10 @@ as.double <- "[as.double()](https://www.rdocumentation.org/packages/base/version
 ## Introduction:
 This tutorial will walk you through many of the major aspects of data science, including data cleaning, exploratory data analysis, hypothesis testing, machine learning, and curation of a message.
 
-To begin, let's examine the dataset we will be using throughout this tutorial.  This dataset contains data from thousands of AirBnb listings in San Fransisco.  To download the data we are using, visit [here](http://insideairbnb.com/get-the-data.html) and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
+To begin, let's examine the dataset we will be using throughout this tutorial.  This dataset contains data from thousands of AirBnb listings in San Francisco.  To download the data we are using, visit [here](http://insideairbnb.com/get-the-data.html) and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
 
 ```{r load_csv, warning=FALSE, message=FALSE}
 library(tidyverse)
-library(knitr)
 dat <- read_csv("listings_sf_all.csv")
 head(dat)
 ```
@@ -166,7 +169,6 @@ host_fixed_dat <- factor_dat %>%
 host_fixed_dat %>% select(host_response_rate) %>% head()
 ```
 
-
 ## EDA
 
 First, we do some simple graphs to get a better feel for the dataset. The first graph we plot is of the distribution of prices. As you can see from the violin plot (`r geom_violin`), the data is heavily skewed - the vast majority of prices are quite low, but there is a long tail of increasing prices going all the way up to $10,000. 
@@ -178,7 +180,7 @@ host_fixed_dat %>%
   labs(title = "Distribution of Price", y = "Price", x = "")
 ```
 
-Skew is calculated by how far the `r median` is from the average of the first and third `r quantile` of the data. When calculating the skew for the price, we get a skew of \$35, which is quite significant given that the average price for an accomodation is \$213. Additionally, we can see that the median is also very different from the mean - they differ by almost $65 dollars. This high degree of skew makes the data difficult to work with and graph.
+Skew is calculated by how far the `r median` is from the average of the first and third `r quantile` of the data. When calculating the skew for the price, we get a skew of \$35, which is quite significant given that the average price for an accommodation is \$213. Additionally, we can see that the median is also very different from the mean - they differ by almost $65 dollars. This high degree of skew makes the data difficult to work with and graph.
 ```{r} 
 host_fixed_dat %>% 
   summarize(mean_price = mean(price))
@@ -190,7 +192,7 @@ skew_dat <- host_fixed_dat %>%
 skew_dat
 ```
 
-In order to learn more about the skew, we took a closer look at the properties with cost greater than \$5000. There are only 5 of them in a dataset of more than 7,000, making them sigificant outliers. In order to get a better sense of what these data points were, we joined in the listing url to allow us to look at the whole listing. Because there are only 5 listings, we went through them individually so that we could find out what was happening. All 5 of these price values are incorrect - the first, second and fourth are 550, 60 and 1100 respectively, while the third and fifth listings are no longer availible. Given that these listings are all in error, we can safely remove them from the dataset.
+In order to learn more about the skew, we took a closer look at the properties with cost greater than \$5000. There are only 5 of them in a dataset of more than 7,000, making them significant outliers. In order to get a better sense of what these data points were, we joined in the listing url to allow us to look at the whole listing. Because there are only 5 listings, we went through them individually so that we could find out what was happening. All 5 of these price values are incorrect - the first, second and fourth are 550, 60 and 1100 respectively, while the third and fifth listings are no longer available. Given that these listings are all in error, we can safely remove them from the dataset.
 
 ```{r}
 host_fixed_dat %>% 
@@ -201,7 +203,7 @@ host_fixed_dat %>%
 clean_dat <- host_fixed_dat %>% filter(price < 5000)
 ```
 
-However, even though the major outliers have been cleaned, there is still quite a range of valid prices - a little over 3 orders of magnitude. THe data still has a long tail of higher prices, which makes graphs difficult to read and interpret. Using a standard linear scale packs the vast majority of the data into a small slice near the bottom and leaves a lot of the upper graph blank. In order to make the graphs easier to interpret, we use a logarithmic scale (using the base 10 logarithmic function `r log10`). A log tansformation reduces skew, so the resulting graph is easier to read and analyze visually.
+However, even though the major outliers have been cleaned, there is still quite a range of valid prices - a little over 3 orders of magnitude. The data still has a long tail of higher prices, which makes graphs difficult to read and interpret. Using a standard linear scale packs the vast majority of the data into a small slice near the bottom and leaves a lot of the upper graph blank. In order to make the graphs easier to interpret, we use a logarithmic scale (using the base 10 logarithmic function `r log10`). A log transformation reduces skew, so the resulting graph is easier to read and analyze visually.
 ```{r}
 log_price_dat <- clean_dat %>% filter(price > 0) %>% mutate(log_price = log10(price))
 
@@ -218,7 +220,7 @@ log_price_dat %>%
   labs(title = "Distribution of Transformed Price", y = "Price (logbase10)", x = "")
 ```
 
-We now want to do some Elementary Data Analysis. First, we plot our log(price) data against neighborhood in order to determine visually if price is based on neighborhood (we'll calculate this mathematically later).  This plot gives us some useful insights about certain neighborhoods. For example, Golden Gate Park has a very tightly clustered distribution with a couple of outliers. Presidio dhas no outliers, just a single cluster at a single price. This suggests that there are not that many listings in these locations and that the listings that are there are likely coordinated. In contrast, South of Market has a ton of ouutliers and a very smally box portion of the box plot. The small box describes a heavily clusted dataset, but the lack of dropoff suggests other factors at play in the price other than location. Overall, the graph doesn't show an obvious trand regarding location, but some neighborhoods trend higher than others. Marina is noticably more pricy than some other options, and Crocker Amazon is obviously cheaper.
+We now want to do some Elementary Data Analysis. First, we plot our log(price) data against neighborhood in order to determine visually if price is based on neighborhood (we'll calculate this mathematically later).  This plot gives us some useful insights about certain neighborhoods. For example, Golden Gate Park has a very tightly clustered distribution with a couple of outliers. Presidio has no outliers, just a single cluster at a single price. This suggests that there are not that many listings in these locations and that the listings that are there are likely coordinated. In contrast, South of Market has a ton of outliers and a very small box portion of the box plot. The small box describes a heavily clustered dataset, but the lack of dropoff suggests other factors at play in the price other than location. Overall, the graph doesn't show an obvious trend regarding location, but some neighborhoods trend higher than others. Marina is noticeably more pricey than some other options, and Crocker Amazon is obviously cheaper.
 
 ```{r boxplots1, message= FALSE, warning= FALSE}
 log_price_dat %>% 
@@ -228,7 +230,7 @@ log_price_dat %>%
   labs(title = "Distribution of Price by Neighbourhood", y = "Price (logbase10)", x = "Neighbourhood")
 ```
 
-The graph of property type is much more varied. Some properties, such as Castle, Earth House and Treehouse only have 1 entry, making their bar plot a single line. Others are a bit more spread, but still clustered reasonable cloely, such Boat, Cabin and Tiny House. The four of major interest however are Apartment, Condominium, Hotel and House. Hotel has a large cluster near the middle of its distriution and then a handul of outliers both above and below. We can see that hotel prices are controlled more closely than the others. Condos and houses both have the same "long tail" up towards higher prices, but apartment's tails go both above and below the mean, as well as are more populated with data.
+The graph of property type is much more varied. Some properties, such as Castle, Earth House and Treehouse only have 1 entry, making their bar plot a single line. Others are a bit more spread, but still clustered reasonable closely, such Boat, Cabin and Tiny House. The four of major interest however are Apartment, Condominium, Hotel and House. Hotel has a large cluster near the middle of its distribution and then a handful of outliers both above and below. We can see that hotel prices are controlled more closely than the others. Condos and houses both have the same "long tail" up towards higher prices, but apartment's tails go both above and below the mean, as well as are more populated with data.
 ```{r boxplots2, message= FALSE, warning= FALSE}
 log_price_dat %>% 
   ggplot(aes(x = property_type, y = log_price, group = property_type)) + 
@@ -237,8 +239,8 @@ log_price_dat %>%
   labs(title = "Distribution of Price by Property Type", y = "Price (logbase10)", x = "Property Type")
 ```
 
-Regarding room type the price differences are even more clear. Sharing a room is (quite understandably) seen as a detriment, while renting the enitire house costs noticably more. Having a private room falls somewhere in the middle. Again, we see the tails of higher prices, which notably follow the trend of the majority of the data set - the price difference carries across the board.
-```{r boxplots2, message= FALSE, warning= FALSE}
+Regarding room type the price differences are even more clear. Sharing a room is (quite understandably) seen as a detriment, while renting the entire house costs noticeably more. Having a private room falls somewhere in the middle. Again, we see the tails of higher prices, which notably follow the trend of the majority of the data set - the price difference carries across the board.
+```{r boxplots3, message= FALSE, warning= FALSE}
 log_price_dat %>% 
   ggplot(aes(x = room_type, y = log_price, group = room_type)) + 
   geom_boxplot() + 
@@ -246,8 +248,8 @@ log_price_dat %>%
   labs(title = "Distribution of Price by Room Type", y = "Price (logbase10)", x = "Room Type")
 ```
 
-While some of the other metrics are luxuries, or at least involve some chice on the part of the renter, the number of bedrooms is usually a parameter of the search. The average price as a function of number of bedrooms looks linear by inspection (0 bedrooms corresponds to studio apartments, which usually have a pull-out bed, but no bedroom). We also notice that there is 1 place with 14 bedrooms that doesn't follow the trend, as well as a couple of N/A values, but the number of these is insignificant as compared with the size of the entire dataset. We'll go into more deatil on this later.
-```{r boxplots2, message= FALSE, warning= FALSE}
+While some of the other metrics are luxuries, or at least involve some choice on the part of the renter, the number of bedrooms is usually a parameter of the search. The average price as a function of number of bedrooms looks linear by inspection (0 bedrooms corresponds to studio apartments, which usually have a pull-out bed, but no bedroom). We also notice that there is 1 place with 14 bedrooms that doesn't follow the trend, as well as a couple of N/A values, but the number of these is insignificant as compared with the size of the entire dataset. We'll go into more detail on this later.
+```{r boxplots4, message= FALSE, warning= FALSE}
 log_price_dat %>% 
   ggplot(aes(x = bedrooms, y = log_price, group = bedrooms)) + 
   geom_boxplot() + 
@@ -255,8 +257,8 @@ log_price_dat %>%
   labs(title = "Distribution of Price by Number of Bedrooms", y = "Price (logbase10)", x = "Bedrooms")
 ```
 
-Finally, we look at the impact of air conditioning. Given that the data is from California Airbnb's, AC is quite likely an important factor in people's choice of where to live. We see that places with AC are priced higher than places without, on average, but there are far more places without AC than with it. Additionally, the places with AC are more clustered - they have less outliers.
-```{r boxplots2, message= FALSE, warning= FALSE}
+Finally, we look at the impact of air conditioning. Given that the data is from California Airbnbs, AC is quite likely an important factor in people's choice of where to live. We see that places with AC are priced higher than places without, on average, but there are far more places without AC than with it. Additionally, the places with AC are more clustered - they have less outliers.
+```{r boxplots5, message= FALSE, warning= FALSE}
 log_price_dat %>% ggplot(aes(x = has_ac, y = log_price)) + 
   geom_boxplot() +
   labs(title = "Distribution of Price Based on Whether Listing has Air Conditioning", y = "Price (logbase10)", x = "Has AC?")
@@ -294,10 +296,11 @@ model2_coeffs %>% head()
 So let's examine the variables for which we cannot reject the null hypothesis.
 
 ```{r}
+library(knitr)
 model2_coeffs %>% filter(p.value > .05) %>% kable()
 ```
 
-We clearly cannot say anything meaningful about the effect the presence of a washer, dryer, or kitchen has on price.  However, analysis of the other variables is a little trickier, as the other variables all represent portions of a single categorical variable.  So how do we handle categorical variables for which we can only reject the null hypothesis for some of the domain? Here, it is best to do so on a case by case basis.  For property_type, neighborhood, and accomodates, the values for which we cannot reject the null hypothesis represent a relatively small portion of the domain, so discarding these variables entirely would likely be unwise.  For beds and bathrooms, it is best to examine the distribution of listings across the domain.
+We clearly cannot say anything meaningful about the effect the presence of a washer, dryer, or kitchen has on price.  However, analysis of the other variables is a little trickier, as the other variables all represent portions of a single categorical variable.  So how do we handle categorical variables for which we can only reject the null hypothesis for some of the domain? Here, it is best to do so on a case by case basis.  For property_type, neighborhood, and accommodates, the values for which we cannot reject the null hypothesis represent a relatively small portion of the domain, so discarding these variables entirely would likely be unwise.  For beds and bathrooms, it is best to examine the distribution of listings across the domain.
 
 ```{r}
 table(log_price_dat$bathrooms)
@@ -317,7 +320,7 @@ model3_aug <- model3 %>% augment()
 model3_stats
 ```
 
-Even though we discarded four variables, the new model's $R^2$ value is only .001 lower! This means this smaller model will be much better to use going forward.
+Even though we discarded four variables, the new model's $R^2$ value is less than .001 lower! This means this smaller model will be much better to use going forward.
 
 However, before we can move on and analyze the coefficients in this new model, there is one last thing we should do.  In order to verify our assumption of a linear relationship between the variables and price, we need to ensure that there are no trends in the residuals (the difference between the predicted value and the observed value).  If our model is sound, the residuals should be uniformly and randomly clustered around 0 when plotted against the fitted value (the log price).
 
@@ -327,3 +330,19 @@ model3_aug %>% ggplot(aes(x=.fitted,y=.resid)) + geom_point() + geom_smooth(meth
 
 As the above graph meets the listed requirements, our model is sound and can now be analyzed appropriately.
 
+Since we are using the log of the price, interpreting the learned coefficients can be a bit tricky.  Normally, if the term "bedrooms1" had a coefficient of 100, we could say that having 1 bedrooms increases the price of a listing by \$100 (over having no bedrooms).  However, in this case the relationship is more multiplicative.  As is detailed [here](https://data.library.virginia.edu/interpreting-log-transformations-in-a-linear-model/), the best way to interpret the coefficients our model is to calculate a percent change in the price elicited by the presence of a variable by taking $(10^{estimate} - 1) * 100$.
+```{r}
+interpreted_model <- model3_coeffs %>% mutate(pct_change = (10^estimate - 1) * 100)
+```
+
+By doing this we can gain insight into the degree different variables affect the price.
+
+```{r}
+interpreted_model %>% filter(str_detect(term, "bedrooms")) %>% select(term, pct_change)
+```
+
+For example, we can see that the presence of one bedroom increses the value of a listing by 15%, whereas the presence of 5 bedrooms increases the value by nearly 200%! This kind of analysis is not perfect however, as we are left with puzzling percent change values in some areas.  For example, this analysis would tell us the presence of 14 bedrooms decreases the value of a listing by nearly 75%, when in reality this number is derived from one extreme outlier.
+
+## Conclusion
+
+In summation, we can say with high probability that number of bedrooms, number of bathrooms, number people accomodated, property type, room type, neighborhood, air conditioning, TV, pet friendliness, and rating all affect the price of a listing.  If we were to revisit this analysis, we would likely try nonlinear models in order to better fit the data, better address outliers (either via better scraping or outlier detection), and perhaps expand the listings we analyzed to outside of just San Fransisco to get a larger sample size and see what we can say about AirBnb listings as a whole.
