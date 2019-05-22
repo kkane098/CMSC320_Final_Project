@@ -29,9 +29,11 @@ as.double <- "[as.double()](https://www.rdocumentation.org/packages/base/version
 ```
 
 ## Introduction:
-This tutorial will walk you through many of the major aspects of data science, including data cleaning, exploratory data analysis, hypothesis testing, machine learning, and curation of a message.
+This tutorial will walk you through many of the major aspects of data science, including data cleaning, exploratory data analysis, hypothesis testing, machine learning, and curation of a message. We will be using the R programming language, along with the tidyverse library in order to ingest, read, process and display our data, methods and results.
 
-To begin, let's examine the dataset we will be using throughout this tutorial.  This dataset contains data from thousands of AirBnb listings in San Fransisco.  To download the data we are using, visit [here](http://insideairbnb.com/get-the-data.html) and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
+We wanted to use data science to examine Airbnb data from San Fransisco. We were wondering about how the price of a listing corresponds with the listing's various attributes - its location, number of bedrooms, type of lodging, etc. There are many factors that impact the price, including some that we don't have access to, like images on the listing page, but we wanted to see how well we could model and predict listing prices based solely on quantitative attributes.
+
+To begin, let's examine the dataset we will be using throughout this tutorial. To download the data we are using, visit [here](http://insideairbnb.com/get-the-data.html) and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
 
 ```{r load_csv, warning=FALSE, message=FALSE}
 library(tidyverse)
