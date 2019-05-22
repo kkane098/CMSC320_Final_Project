@@ -39,8 +39,6 @@ To begin, let's examine the dataset we will be using throughout this tutorial.  
 
 We wanted to use data science to examine Airbnb data from San Francisco. We were wondering about how the price of a listing corresponds with the listing's various attributes - its location, number of bedrooms, type of lodging, etc. There are many factors that impact the price, including some that we don't have access to, like images on the listing page, but we wanted to see how well we could model and predict listing prices based solely on quantitative attributes.
 
-To begin, let's examine the dataset we will be using throughout this tutorial. To download the data we are using, visit [here](http://insideairbnb.com/get-the-data.html) and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
-
 ```{r load_csv, warning=FALSE, message=FALSE}
 library(tidyverse)
 dat <- read_csv("listings_sf_all.csv")
