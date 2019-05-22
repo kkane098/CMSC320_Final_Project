@@ -35,9 +35,13 @@ as.double <- "[as.double()](https://www.rdocumentation.org/packages/base/version
 ## Introduction:
 This tutorial will walk you through many of the major aspects of data science, including data cleaning, exploratory data analysis, hypothesis testing, machine learning, and curation of a message. We will be using the R programming language, along with the tidyverse library in order to ingest, read, process and display our data, methods and results.
 
-We wanted to use data science to examine Airbnb data from San Fransisco. We were wondering about how the price of a listing corresponds with the listing's various attributes - its location, number of bedrooms, type of lodging, etc. There are many factors that impact the price, including some that we don't have access to, like images on the listing page, but we wanted to see how well we could model and predict listing prices based solely on quantitative attributes.
+<<<<<<< HEAD
+To begin, let's examine the dataset we will be using throughout this tutorial.  This dataset contains data from thousands of AirBnb listings in San Francisco.  To download the data we are using, visit [here](http://insideairbnb.com/get-the-data.html) and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
+=======
+We wanted to use data science to examine Airbnb data from San Francisco. We were wondering about how the price of a listing corresponds with the listing's various attributes - its location, number of bedrooms, type of lodging, etc. There are many factors that impact the price, including some that we don't have access to, like images on the listing page, but we wanted to see how well we could model and predict listing prices based solely on quantitative attributes.
 
 To begin, let's examine the dataset we will be using throughout this tutorial. To download the data we are using, visit [here](http://insideairbnb.com/get-the-data.html) and click on the listing.csv.gz link.  The csv can be loaded into R as follows.
+>>>>>>> 39fe2d00b6cbc2915fbe54d3300dc5df48e040cf
 
 ```{r load_csv, warning=FALSE, message=FALSE}
 library(tidyverse)
@@ -343,8 +347,8 @@ By doing this we can gain insight into the degree different variables affect the
 interpreted_model %>% filter(str_detect(term, "bedrooms")) %>% select(term, pct_change)
 ```
 
-For example, we can see that the presence of one bedroom increses the value of a listing by 15%, whereas the presence of 5 bedrooms increases the value by nearly 200%! This kind of analysis is not perfect however, as we are left with puzzling percent change values in some areas.  For example, this analysis would tell us the presence of 14 bedrooms decreases the value of a listing by nearly 75%, when in reality this number is derived from one extreme outlier.
+For example, we can see that the presence of one bedroom increases the value of a listing by 15%, whereas the presence of 5 bedrooms increases the value by nearly 200%! This kind of analysis is not perfect however, as we are left with puzzling percent change values in some areas.  For example, this analysis would tell us the presence of 14 bedrooms decreases the value of a listing by nearly 75%, when in reality this number is derived from one extreme outlier.
 
 ## Conclusion
 
-In summation, we can say with high probability that number of bedrooms, number of bathrooms, number people accomodated, property type, room type, neighborhood, air conditioning, TV, pet friendliness, and rating all affect the price of a listing.  If we were to revisit this analysis, we would likely try nonlinear models in order to better fit the data, better address outliers (either via better scraping or outlier detection), and perhaps expand the listings we analyzed to outside of just San Fransisco to get a larger sample size and see what we can say about AirBnb listings as a whole.
+In summation, we can say with high probability that number of bedrooms, number of bathrooms, number people accommodated, property type, room type, neighborhood, air conditioning, TV, pet friendliness, and rating all affect the price of a listing.  If we were to revisit this analysis, we would likely try nonlinear models in order to better fit the data, better address outliers (either via better scraping or outlier detection), and perhaps expand the listings we analyzed to outside of just San Francisco to get a larger sample size and see what we can say about AirBnb listings as a whole.
